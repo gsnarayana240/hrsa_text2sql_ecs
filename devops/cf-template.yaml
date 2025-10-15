@@ -55,110 +55,6 @@ Parameters:
     Type: String
 
 Resources:
-# Create IAM role for Lambda
-  hrsaLambdaFunctionRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Join [ "-",[!Ref   pDepartment, !Ref   pProject,  !Ref pEnvironment , 'lambda-function', 'role' ]]
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: 'Allow'
-            Principal:
-              Service: 'lambda.amazonaws.com'
-            Action: 'sts:AssumeRole'
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonBedrockFullAccess
-        - arn:aws:iam::aws:policy/AWSLambda_FullAccess
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-        - arn:aws:iam::aws:policy/AmazonEC2FullAccess
-  hrsaLambdalayer:
-    DeletionPolicy: Delete
-    Type: 'AWS::Lambda::LayerVersion'
-    Properties:
-      Content:
-        S3Bucket: !Ref S3BucketName
-        S3Key: !Sub '${S3CodePrefix}/Layers/SnowflakeLayers.zip'
-      LayerName: !Join [ "-",[!Ref pDepartment, !Ref pProject, !Ref  pEnvironment, 'snowflake-lambda-layer']]
-      CompatibleRuntimes:
-        - python3.12
-      CompatibleArchitectures:
-        - x86_64
-
-  ApiGateway:
-    Type: AWS::ApiGatewayV2::Api
-    Properties:
-        Name: !Sub ${ApiGatewayName}
-        ProtocolType: HTTP
-
-  ApiStage:
-    Type: 'AWS::ApiGatewayV2::Stage'
-    Properties:
-        StageName: !Ref pEnvironment
-        ApiId: !Ref ApiGateway
-        AutoDeploy: true
-
-  ApiRoute:
-    Type: 'AWS::ApiGatewayV2::Route'
-    Properties:
-        ApiId: !Ref ApiGateway
-        RouteKey: !Sub 'POST /${ApiPath}'
-        AuthorizationType: NONE
-        Target: !Join 
-          - "/"
-          - - "integrations"
-            - !Ref MyLambdaIntegration # Connects to the defined integration
-  
-  MyLambdaIntegration:
-    Type: AWS::ApiGatewayV2::Integration
-    Properties:
-        ApiId: !Ref ApiGateway
-        IntegrationType: AWS_PROXY # For Lambda integration
-        IntegrationUri: !GetAtt hrsatext2sql.Arn # Assuming MyLambdaFunction is defined elsewhere
-        PayloadFormatVersion: "2.0" # Required for AWS_PROXY integrations
-
-  MySecretB:
-    Type: 'AWS::SecretsManager::Secret'
-    Properties:
-      Name: SecretForText2SqlProject
-      Description: This secret has a hardcoded password in SecretString
-      SecretString: !Sub '{"SNOWFLAKE_ACCOUNT": ${SNOWFLAKEACCOUNT},"SNOWFLAKE_USER":"${SNOWFLAKEUSER}", "SNOWFLAKE_PASSWORD":"${SNOWFLAKEPASSWORD}","SNOWFLAKE_WAREHOUSE":"${SNOWFLAKEWAREHOUSE}","SNOWFLAKE_DATABASE":"${SNOWFLAKEDATABASE}","SNOWFLAKE_SCHEMA":"${SNOWFLAKESCHEMA}","APIGATEWAY_URL":"https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${ApiPath}"}'
-
-  hrsatext2sql:
-    Type: AWS::Lambda::Function
-    Properties:
-      FunctionName: !Join [ "-",[!Ref pDepartment, !Ref pProject, !Ref  pEnvironment,'text2sql-load']]
-      Handler: HRSA_Text_To_Sql.lambda_handler
-      Role: !GetAtt hrsaLambdaFunctionRole.Arn
-      Code:
-        S3Bucket: !Ref S3BucketName
-        S3Key: !Sub '${S3CodePrefix}/Lambda/HRSA_Text_To_Sql.zip'
-      MemorySize: 512
-      Runtime: python3.12
-      Timeout: 900
-      Environment:
-        Variables:
-          awsregion: !Ref AWS::Region
-          modelId: !Ref ModelName
-          environment: !Ref pEnvironment
-          secret_manager: !Ref MySecretB
-      Layers:
-        - "arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python312:19"
-        - !Ref hrsaLambdalayer
-      VpcConfig:
-        SecurityGroupIds:
-          - !Ref pSecurityGroupId
-        SubnetIds:
-          - !Ref pSubnet1
-          - !Ref pSubnet2
-
-  ApiGatewayLambdaPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !GetAtt hrsatext2sql.Arn
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGateway}/*/*/${ApiPath}"
-
   hrsaCodeBuildRole:
     Type: AWS::IAM::Role
     Properties:
@@ -212,7 +108,7 @@ Resources:
        ServiceRole: !GetAtt hrsaCodeBuildRole.Arn
        Source: 
          Type: S3
-         Location: !Sub '${S3BucketName}/${S3CodePrefix}/text2sql/'
+         Location: !Sub '${S3BucketName}/${S3CodePrefix}/text2sqlecs/'
          BuildSpec: build.yaml
        Artifacts:
           Type: NO_ARTIFACTS

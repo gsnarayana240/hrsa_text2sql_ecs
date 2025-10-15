@@ -39,7 +39,7 @@ RUN python3.12 -m pip install plotly
 #CMD [ "lambda.lambda_handler" ]
 
 EXPOSE 8501
-COPY . . .
+COPY . .
 
 
 ENV region=$region
