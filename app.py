@@ -44,8 +44,9 @@ payload = {'callwhichfunction': 'generate_sql'}
 
 
 region = os.environ.get("region")
-secret_manager=os.environ.get("secret_manager")
-
+#secret_manager=os.environ.get("secret_manager")
+url=os.environ.get("APIGatewayURL")
+'''
 def get_secret_dict(client, secret_name):
     secret_string = client.get_secret_value(SecretId=secret_name)
     required_fields = ['SNOWFLAKE_ACCOUNT', 'SNOWFLAKE_USER', 'SNOWFLAKE_PASSWORD', 'SNOWFLAKE_WAREHOUSE', 'SNOWFLAKE_WAREHOUSE', 'SNOWFLAKE_DATABASE', 'SNOWFLAKE_SCHEMA', 'APIGATEWAY_URL']
@@ -58,7 +59,7 @@ def get_secret_dict(client, secret_name):
 
 secretsmanagerclient = boto3.client('secretsmanager', region_name=region)  # changed to varable name
 secretstring = get_secret_dict(secretsmanagerclient, secret_manager)
-
+'''
 
 CACHE_FILE = "profiling_cache.json"
 CACHE_TTL_HOURS = 24
@@ -85,7 +86,7 @@ class GraphState(TypedDict):
 #url ="https://6tiwvba334.execute-api.us-east-1.amazonaws.com/development/topicgeneration"
 #url="https://6tiwvba334.execute-api.us-east-1.amazonaws.com/development/testbedrockwithlanggraph"
 #url="https://6tiwvba334.execute-api.us-east-1.amazonaws.com/development/testonlymodel"
-url="https://6tiwvba334.execute-api.us-east-1.amazonaws.com/development/testanthropiccall"
+#url="https://6tiwvba334.execute-api.us-east-1.amazonaws.com/development/testanthropiccall"
 #inputtopic="Total funding amount given to grant receipients who received their first grant in FY2023 (where FY2023 is their earliest grant award_year in data"
 
 def getQuery(inputtopic):

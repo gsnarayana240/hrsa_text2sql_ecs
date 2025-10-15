@@ -43,7 +43,7 @@ COPY . .
 
 
 ENV region=$region
-ENV secret_manager=$secret_manager
+ENV APIGatewayURL=$APIGatewayURL
 
 #ENTRYPOINT ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0", "--server.fileWatcherType=none", "--browser.gatherUsageStats=false", "--client.toolbarMode=minimal"]
 ENTRYPOINT ["streamlit", "run", "app.py"]

@@ -20,38 +20,15 @@ Parameters:
   pSubnet2:
     Type: String
     Description: Subnet 2
-  S3BucketName:
-    Type: String
-  S3CodePrefix:
-    Description: upload folder for code in S3 Bucket
-    Type: String
-  ApiGatewayName:
-    Type: String
   AWSRegion:
-    Type: String
-  SNOWFLAKEACCOUNT:
-    Type: String
-  SNOWFLAKEUSER:
-    Type: String
-  SNOWFLAKEPASSWORD:
-    Type: String
-  SNOWFLAKEWAREHOUSE:
-    Type: String
-  SNOWFLAKEDATABASE:
-    Type: String
-  SNOWFLAKESCHEMA:
-    Type: String
-  SNOWFLAKEUSER:
-    Type: String
-  ModelName:
-    Type: String
-  ApiPath:
     Type: String
   ImageRepoName:
     Type: String
   ImageTag:
     Type: String
   ImageId:
+    Type: String
+  APIGatewayURL:
     Type: String
 
 Resources:
@@ -107,9 +84,19 @@ Resources:
        Name: 'hrsatext2sqlcodebuild'
        ServiceRole: !GetAtt hrsaCodeBuildRole.Arn
        Source: 
-         Type: S3
-         Location: !Sub '${S3BucketName}/${S3CodePrefix}/text2sqlecs/'
+         Type: github
+         Location: https://github.com/gsnarayana240/hrsa_text2sql_ecs.git
          BuildSpec: build.yaml
+         Auth:
+           Type: CODECONNECTIONS
+           Resource: arn:aws:codeconnections:us-east-1:299195675384:connection/5bad3faa-8c56-4979-813f-b2fbbaf7f012
+       Triggers:
+           Webhook: true
+           FilterGroups:
+            - Type: EVENT
+              Pattern: PUSH
+            - Type: HEAD_REF
+              Pattern: ^refs/heads/main$ # Trigger on pushes to 'main' branch           
        Artifacts:
           Type: NO_ARTIFACTS
        Environment:
@@ -126,8 +113,8 @@ Resources:
               Value: !Sub ${ImageTag}
             - Name: region
               Value: !Sub ${AWSRegion}
-            - Name: secret_manager
-              Value: !Ref MySecretB
+            - Name: APIGatewayURL
+              Value: !Sub ${APIGatewayURL}
           Image: !Sub ${ImageId}
           
   MyECRRepository:
@@ -137,59 +124,6 @@ Resources:
       ImageScanningConfiguration:
         ScanOnPush: true
       ImageTagMutability: MUTABLE
-        
-  text2sqlEventBridgeRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Join [ "-",[!Ref   pDepartment, !Ref   pProject,  !Ref pEnvironment , 'text2sql-event', 'role' ]]
-      Path: /
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: 'Allow'
-            Principal:
-              Service: 'events.amazonaws.com'
-            Action: 'sts:AssumeRole'
-      Policies:
-        - PolicyName: EventBridgeCodeBuildInvokePolicy
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action: codebuild:StartBuild
-                Resource: 
-                   - '*'
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/CloudWatchFullAccess
-        - arn:aws:iam::aws:policy/service-role/AWSCodeDeployRole
-        - arn:aws:iam::aws:policy/AmazonS3FullAccess
-        
-
-  CodeBuildEventRule:
-    Type: AWS::Events::Rule
-    Properties:
-      Description: Trigger Code Build Automatically
-      Name: !Join [ "-",[!Ref   pDepartment, !Ref   pProject,  !Ref pEnvironment , 'text2sql-event-rule' ]]
-      RoleArn: !GetAtt text2sqlEventBridgeRole.Arn
-      EventBusName: default
-      EventPattern:
-        source:
-          - "aws.s3"
-        detail-type:
-          - "Object Created"
-        detail:
-          bucket:
-            name:
-              - !Sub '${S3BucketName}'
-          object:
-            key:
-              - prefix: !Sub '${S3CodePrefix}/'
-      State: "ENABLED"
-      RoleArn: !GetAtt text2sqlEventBridgeRole.Arn 
-      Targets:
-         - Id: CodeBuildTarget
-           Arn: !GetAtt hrsCodebuild.Arn
-           RoleArn: !GetAtt text2sqlEventBridgeRole.Arn
            
   MyECSTaskExecutionRole:
     Type: AWS::IAM::Role
