@@ -1,0 +1,358 @@
+#IMPORTANT!!:  make sure cloud team gives permission to the user for admin role with Glue on ENV and prod. otherwise this will fail
+#release foundational
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  pDepartment:
+    Type: String
+    Default: hrsa
+  pProject:
+    Type: String
+    Default: text2sql
+  pSecurityGroupId:
+    Type: String
+    Description: SecurityGroupIds
+  pEnvironment:
+    Type: String
+    Default: d
+  pSubnet1:
+    Type: String
+    Description: Subnet 1
+  pSubnet2:
+    Type: String
+    Description: Subnet 2
+  S3BucketName:
+    Type: String
+  S3CodePrefix:
+    Description: upload folder for code in S3 Bucket
+    Type: String
+  ApiGatewayName:
+    Type: String
+  AWSRegion:
+    Type: String
+  SNOWFLAKEACCOUNT:
+    Type: String
+  SNOWFLAKEUSER:
+    Type: String
+  SNOWFLAKEPASSWORD:
+    Type: String
+  SNOWFLAKEWAREHOUSE:
+    Type: String
+  SNOWFLAKEDATABASE:
+    Type: String
+  SNOWFLAKESCHEMA:
+    Type: String
+  SNOWFLAKEUSER:
+    Type: String
+  ModelName:
+    Type: String
+  ApiPath:
+    Type: String
+  ImageRepoName:
+    Type: String
+  ImageTag:
+    Type: String
+  ImageId:
+    Type: String
+
+Resources:
+# Create IAM role for Lambda
+  hrsaLambdaFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Join [ "-",[!Ref   pDepartment, !Ref   pProject,  !Ref pEnvironment , 'lambda-function', 'role' ]]
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service: 'lambda.amazonaws.com'
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonBedrockFullAccess
+        - arn:aws:iam::aws:policy/AWSLambda_FullAccess
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AmazonEC2FullAccess
+  hrsaLambdalayer:
+    DeletionPolicy: Delete
+    Type: 'AWS::Lambda::LayerVersion'
+    Properties:
+      Content:
+        S3Bucket: !Ref S3BucketName
+        S3Key: !Sub '${S3CodePrefix}/Layers/SnowflakeLayers.zip'
+      LayerName: !Join [ "-",[!Ref pDepartment, !Ref pProject, !Ref  pEnvironment, 'snowflake-lambda-layer']]
+      CompatibleRuntimes:
+        - python3.12
+      CompatibleArchitectures:
+        - x86_64
+
+  ApiGateway:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+        Name: !Sub ${ApiGatewayName}
+        ProtocolType: HTTP
+
+  ApiStage:
+    Type: 'AWS::ApiGatewayV2::Stage'
+    Properties:
+        StageName: !Ref pEnvironment
+        ApiId: !Ref ApiGateway
+        AutoDeploy: true
+
+  ApiRoute:
+    Type: 'AWS::ApiGatewayV2::Route'
+    Properties:
+        ApiId: !Ref ApiGateway
+        RouteKey: !Sub 'POST /${ApiPath}'
+        AuthorizationType: NONE
+        Target: !Join 
+          - "/"
+          - - "integrations"
+            - !Ref MyLambdaIntegration # Connects to the defined integration
+  
+  MyLambdaIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+        ApiId: !Ref ApiGateway
+        IntegrationType: AWS_PROXY # For Lambda integration
+        IntegrationUri: !GetAtt hrsatext2sql.Arn # Assuming MyLambdaFunction is defined elsewhere
+        PayloadFormatVersion: "2.0" # Required for AWS_PROXY integrations
+
+  MySecretB:
+    Type: 'AWS::SecretsManager::Secret'
+    Properties:
+      Name: SecretForText2SqlProject
+      Description: This secret has a hardcoded password in SecretString
+      SecretString: !Sub '{"SNOWFLAKE_ACCOUNT": ${SNOWFLAKEACCOUNT},"SNOWFLAKE_USER":"${SNOWFLAKEUSER}", "SNOWFLAKE_PASSWORD":"${SNOWFLAKEPASSWORD}","SNOWFLAKE_WAREHOUSE":"${SNOWFLAKEWAREHOUSE}","SNOWFLAKE_DATABASE":"${SNOWFLAKEDATABASE}","SNOWFLAKE_SCHEMA":"${SNOWFLAKESCHEMA}","APIGATEWAY_URL":"https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${ApiPath}"}'
+
+  hrsatext2sql:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Join [ "-",[!Ref pDepartment, !Ref pProject, !Ref  pEnvironment,'text2sql-load']]
+      Handler: HRSA_Text_To_Sql.lambda_handler
+      Role: !GetAtt hrsaLambdaFunctionRole.Arn
+      Code:
+        S3Bucket: !Ref S3BucketName
+        S3Key: !Sub '${S3CodePrefix}/Lambda/HRSA_Text_To_Sql.zip'
+      MemorySize: 512
+      Runtime: python3.12
+      Timeout: 900
+      Environment:
+        Variables:
+          awsregion: !Ref AWS::Region
+          modelId: !Ref ModelName
+          environment: !Ref pEnvironment
+          secret_manager: !Ref MySecretB
+      Layers:
+        - "arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python312:19"
+        - !Ref hrsaLambdalayer
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref pSecurityGroupId
+        SubnetIds:
+          - !Ref pSubnet1
+          - !Ref pSubnet2
+
+  ApiGatewayLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt hrsatext2sql.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGateway}/*/*/${ApiPath}"
+
+  hrsaCodeBuildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Join [ "-",[!Ref   pDepartment, !Ref   pProject,  !Ref pEnvironment , 'code-build', 'role' ]]
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service: 'codebuild.amazonaws.com'
+            Action: 'sts:AssumeRole'
+            
+      Policies:
+        - PolicyName: codebuild-policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'ecr:GetAuthorizationToken'
+                  - 'ecr:BatchCheckLayerAvailability'
+                  - 'ecr:InitiateLayerUpload'
+                  - 'ecr:UploadLayerPart'
+                  - 'ecr:CompleteLayerUpload'
+                  - 'ecr:PutImage'
+                  - 'ecr:BatchGetImage'
+                  - 'ecr:BatchImportUpstreamImage'
+                  - 'ecr:GetDownloadUrlForLayer'
+                  - 'ecr:GetImageCopyStatus'
+                Resource: 
+                  - '*'
+              - Effect: 'Allow'
+                Action:
+                  - 's3:GetObject'
+                  - 's3:PutObject*'
+                  - 's3:PutObjectAcl'
+                  - 's3:List*'
+                  - 's3:Update*'
+                  - 's3:CreateJob*'
+                  - 's3:Get*'
+                  - 's3:DeleteObject'
+                Resource:
+                  - '*'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchFullAccess
+        - arn:aws:iam::aws:policy/service-role/AWSCodeDeployRole
+
+  hrsCodebuild:
+    Type: AWS::CodeBuild::Project
+    Properties:
+       Name: 'hrsatext2sqlcodebuild'
+       ServiceRole: !GetAtt hrsaCodeBuildRole.Arn
+       Source: 
+         Type: S3
+         Location: !Sub '${S3BucketName}/${S3CodePrefix}/text2sql/'
+         BuildSpec: build.yaml
+       Artifacts:
+          Type: NO_ARTIFACTS
+       Environment:
+          Type: LINUX_CONTAINER
+          ComputeType: BUILD_GENERAL1_MEDIUM
+          EnvironmentVariables: 
+            - Name: AWS_DEFAULT_REGION
+              Value: !Ref AWS::Region
+            - Name: AWS_ACCOUNT_ID
+              Value: !Ref AWS::AccountId
+            - Name: IMAGE_REPO_NAME
+              Value: !Sub ${ImageRepoName}
+            - Name: IMAGE_TAG
+              Value: !Sub ${ImageTag}
+            - Name: region
+              Value: !Sub ${AWSRegion}
+            - Name: secret_manager
+              Value: !Ref MySecretB
+          Image: !Sub ${ImageId}
+          
+  MyECRRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: 'hrsa/text2sqldocker2'
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      ImageTagMutability: MUTABLE
+        
+  text2sqlEventBridgeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Join [ "-",[!Ref   pDepartment, !Ref   pProject,  !Ref pEnvironment , 'text2sql-event', 'role' ]]
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service: 'events.amazonaws.com'
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: EventBridgeCodeBuildInvokePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: codebuild:StartBuild
+                Resource: 
+                   - '*'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchFullAccess
+        - arn:aws:iam::aws:policy/service-role/AWSCodeDeployRole
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        
+
+  CodeBuildEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Trigger Code Build Automatically
+      Name: !Join [ "-",[!Ref   pDepartment, !Ref   pProject,  !Ref pEnvironment , 'text2sql-event-rule' ]]
+      RoleArn: !GetAtt text2sqlEventBridgeRole.Arn
+      EventBusName: default
+      EventPattern:
+        source:
+          - "aws.s3"
+        detail-type:
+          - "Object Created"
+        detail:
+          bucket:
+            name:
+              - !Sub '${S3BucketName}'
+          object:
+            key:
+              - prefix: !Sub '${S3CodePrefix}/'
+      State: "ENABLED"
+      RoleArn: !GetAtt text2sqlEventBridgeRole.Arn 
+      Targets:
+         - Id: CodeBuildTarget
+           Arn: !GetAtt hrsCodebuild.Arn
+           RoleArn: !GetAtt text2sqlEventBridgeRole.Arn
+           
+  MyECSTaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Join [ "-",[!Ref   pDepartment, !Ref   pProject,  !Ref pEnvironment , 'ecs-tasks', 'role' ]]
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service: 'ecs-tasks.amazonaws.com'
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchFullAccess
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - arn:aws:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceRole
+        - arn:aws:iam::aws:policy/AmazonECS_FullAccess
+
+  MyECSCluster:
+        Type: AWS::ECS::Cluster
+        Properties:
+          ClusterName: MyFargateCluster # Or MyEC2Cluster
+
+  MyECSService:
+    Type: AWS::ECS::Service
+    Properties:
+      Cluster: !Ref MyECSCluster # Reference an existing ECS cluster
+      ServiceName: my-app-service
+      TaskDefinition: !Ref MyECSTaskDefinition
+      DesiredCount: 1
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets:
+            - !Ref pSubnet1
+            - !Ref pSubnet2
+          SecurityGroups:
+            - !Ref pSecurityGroupId
+            
+  MyECSTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: my-app-task-definition
+      Cpu: "1024"
+      Memory: "8192"
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      ExecutionRoleArn: !GetAtt MyECSTaskExecutionRole.Arn # Reference an IAM role for execution permissions
+      TaskRoleArn: !GetAtt MyECSTaskExecutionRole.Arn
+      ContainerDefinitions:
+        - Name: my-app-container
+          Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/hrsa/text2sqldocker2" # Use !Sub to dynamically get Account ID and Region
+          PortMappings:
+            - ContainerPort: 8501
+              Protocol: tcp
+              HostPort: 8501
+              AppProtocol: http
