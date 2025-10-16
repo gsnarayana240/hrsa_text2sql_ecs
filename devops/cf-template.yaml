@@ -96,13 +96,6 @@ Resources:
          Auth:
            Type: OAUTH
            Resource: githubconnection
-       Triggers:
-           Webhook: false
-           FilterGroups:
-            - - Type: EVENT
-                Pattern: PUSH
-              - Type: HEAD_REF
-                Pattern: ^refs/heads/main$ # Trigger on pushes to 'main' branch           
        Artifacts:
           Type: NO_ARTIFACTS
        Environment:
