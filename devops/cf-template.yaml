@@ -28,7 +28,7 @@ Parameters:
     Type: String
   ImageId:
     Type: String
-  secret_manager:
+  secretmanager:
     Type: String
     
 Resources:
@@ -114,7 +114,7 @@ Resources:
             - Name: region
               Value: !Sub ${AWSRegion}
             - Name: secret_manager
-              Value: !Sub ${secret_manager}
+              Value: !Sub ${secretmanager}
           Image: !Sub ${ImageId}
           
   MyECRRepository:
