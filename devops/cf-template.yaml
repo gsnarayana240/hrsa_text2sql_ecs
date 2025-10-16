@@ -97,7 +97,7 @@ Resources:
            Type: OAUTH
            Resource: githubconnection
        Triggers:
-           Webhook: true
+           Webhook: false
            FilterGroups:
             - - Type: EVENT
                 Pattern: PUSH
