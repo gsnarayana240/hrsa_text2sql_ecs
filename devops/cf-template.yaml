@@ -28,7 +28,7 @@ Parameters:
     Type: String
   ImageId:
     Type: String
-  APIGatewayURL:
+  secret_manager:
     Type: String
 
 Resources:
@@ -113,8 +113,8 @@ Resources:
               Value: !Sub ${ImageTag}
             - Name: region
               Value: !Sub ${AWSRegion}
-            - Name: APIGatewayURL
-              Value: !Sub ${APIGatewayURL}
+            - Name: secret_manager
+              Value: !Sub ${secret_manager}
           Image: !Sub ${ImageId}
           
   MyECRRepository:

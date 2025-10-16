@@ -44,9 +44,8 @@ payload = {'callwhichfunction': 'generate_sql'}
 
 
 region = os.environ.get("region")
-#secret_manager=os.environ.get("secret_manager")
-url=os.environ.get("APIGatewayURL")
-'''
+secret_manager=os.environ.get("secret_manager")
+
 def get_secret_dict(client, secret_name):
     secret_string = client.get_secret_value(SecretId=secret_name)
     required_fields = ['SNOWFLAKE_ACCOUNT', 'SNOWFLAKE_USER', 'SNOWFLAKE_PASSWORD', 'SNOWFLAKE_WAREHOUSE', 'SNOWFLAKE_WAREHOUSE', 'SNOWFLAKE_DATABASE', 'SNOWFLAKE_SCHEMA', 'APIGATEWAY_URL']
@@ -59,7 +58,7 @@ def get_secret_dict(client, secret_name):
 
 secretsmanagerclient = boto3.client('secretsmanager', region_name=region)  # changed to varable name
 secretstring = get_secret_dict(secretsmanagerclient, secret_manager)
-'''
+url=secretstring['APIGatewayURL']
 
 CACHE_FILE = "profiling_cache.json"
 CACHE_TTL_HOURS = 24

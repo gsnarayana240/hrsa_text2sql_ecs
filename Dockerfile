@@ -1,8 +1,9 @@
 FROM public.ecr.aws/lambda/python:3.12
 
 
-ARG secret_manager
+ARG APIGatewayURL
 ARG region
+ARG secret_manager
 # Copy requirements.txt
 #COPY requirements.txt ${LAMBDA_TASK_ROOT}
 
@@ -44,6 +45,7 @@ COPY . .
 
 ENV region=$region
 ENV APIGatewayURL=$APIGatewayURL
+ENV secret_manager=$secret_manager
 
 #ENTRYPOINT ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0", "--server.fileWatcherType=none", "--browser.gatherUsageStats=false", "--client.toolbarMode=minimal"]
 ENTRYPOINT ["streamlit", "run", "app.py"]
