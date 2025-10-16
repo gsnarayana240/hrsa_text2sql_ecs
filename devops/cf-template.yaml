@@ -30,7 +30,7 @@ Parameters:
     Type: String
   secret_manager:
     Type: String
-
+    
 Resources:
   hrsaCodeBuildRole:
     Type: AWS::IAM::Role
