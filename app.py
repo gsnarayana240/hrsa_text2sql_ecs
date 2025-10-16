@@ -227,125 +227,25 @@ def route_after_summarize(state: GraphState) -> str:
 
 def converse(state: GraphState) -> GraphState:
     """Refine follow-up questions using conversation + prior result context."""
-    if state.get("error"):
-        return state
-
     try:
-        past = state.get("history", [])[-8:]
-        prev_sql = state.get("sql", "")
-        prev_summary = state.get("summary", "")
-        prev_df = state.get("df")
-
-        # ---------- NEW: compress dataframe context ----------
-        context_parts = []
-        if prev_df is not None and not prev_df.empty:
-            cols = list(prev_df.columns)
-            # Pick key categorical columns
-            cat_cols = [
-                c for c in cols
-                if re.search(r"(state|county|program|activity|year|code)", c, re.I)
-            ]
-            context_parts.append(f"Detected key columns: {', '.join(cat_cols)}")
-
-            # Extract top values from each key column
-            for col in cat_cols[:5]:  # limit for brevity
-                unique_vals = prev_df[col].dropna().astype(str).unique().tolist()[:15]
-                context_parts.append(f"{col}: {unique_vals}")
-
-
-            # --- Convert non-serializable types safely ---
-            sample_df = prev_df.head(100).copy()
-            for col in sample_df.columns:
-                if pd.api.types.is_datetime64_any_dtype(sample_df[col]) or pd.api.types.is_object_dtype(sample_df[col]):
-                    sample_df[col] = sample_df[col].astype(str)
-
-
-
-            preview = sample_df.to_dict(orient="records")
-            context_parts.append(f"Data sample (first 5 rows): {json.dumps(preview, indent=2, default=str)[:600]}")
-
-        compressed_context = "\n".join(context_parts)
-        state["context"] = compressed_context
-        # ------------------------------------------------------
-
-        system = (
-            "You are a data analytics copilot for HRSA grant data. "
-            "The user is asking follow-up questions about prior results. "
-            "You are given structured context (SQL, summary, key fields, and sample data). "
-            "Use this to interpret the user's new question accurately. "
-            "If the user mentions 'previous list', 'those counties', etc., "
-            "resolve it using the listed key column values. "
-            "Rephrase the intent clearly for the next SQL generation step. "
-            "Do NOT output SQL syntax or table namesâ€”only intent."
-        )
-
-        messages = []
-
-        context_text = f"""
-        --- Previous SQL ---
-        {prev_sql[:400]}
-
-        --- Previous Summary ---
-        {prev_summary[:600]}
-
-        --- Structured Context from Previous Data ---
-        {compressed_context}
-        """
-
-        messages.append({"role": "user", "content": [{"type": "text", "text": context_text}]})
-
-        for m in past:
-            messages.append({
-                "role": m["role"],
-                "content": [{"type": "text", "text": m["content"]}]
-            })
-
-        messages.append({
-            "role": "user",
-            "content": [{"type": "text", "text": state["question"]}]
-        })
-
-        payload = {
-            "anthropic_version": "bedrock-2023-05-31",
-            "system": system,
-            "max_tokens": 500,
-            "messages": messages
-        }
-        
-        print("I am here")
-        print(payload)
-
-        resp = bedrock.invoke_model(
-            body=json.dumps(payload),
-            modelId=MODEL_ID,
-            accept=ACCEPT,
-            contentType=CONTENT_TYPE
-        )
-
-        body = json.loads(resp["body"].read())
-        refined_text = (
-            body.get("content", [{}])[0].get("text", "").strip()
-            if body.get("content")
-            else "Could not refine question."
-        )
-
-        # Update state
-        state.setdefault("history", [])
-        state["history"].append({"role": "user", "content": state["question"]})
-        state["history"].append({"role": "assistant", "content": refined_text})
-
-        state["question"] = refined_text
-        state["conversation_reply"] = refined_text
-        state["df"] = state.get("df")
-        state["summary"] = state.get("summary")
-
-        print("🧠 Refined question:", refined_text)
-        return state
-
+        #st.write(state)
+        if state.get("error"):
+            #st.write("return summarize")
+            return state
+        #st.write("hakshkjahs")
+        payload = {"callwhichfunction": "converse","inputs": state, "Content-Type":"application/json"}
+        #st.write(json.dumps(payload))
+        response=getQuery(payload)
+        #st.write("hakshkjahs")
+        #st.write(response)
+        # Process the response if InvocationType is 'RequestResponse'
+        #if 'Payload' in response:
+        response_payload=response.json()
+        state["summary"] = response_payload["summary"]
+        #st.write(state)
     except Exception as e:
-        state["error"] = f"Conversational agent failed: {e}"
-        return state
-
+        state["error"] = f"SQL generation failed: {e}"
+    return state
 
 
 
