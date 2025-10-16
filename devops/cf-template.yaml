@@ -94,7 +94,7 @@ Resources:
          Location: https://github.com/gsnarayana240/hrsa_text2sql_ecs.git
          BuildSpec: build.yaml
          Auth:
-           Type: CODECONNECTIONS
+           Type: OAUTH
            Resource: arn:aws:codeconnections:us-east-1:299195675384:connection/5bad3faa-8c56-4979-813f-b2fbbaf7f012
        Triggers:
            Webhook: true
