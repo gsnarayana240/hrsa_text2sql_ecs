@@ -58,7 +58,7 @@ def get_secret_dict(client, secret_name):
 
 secretsmanagerclient = boto3.client('secretsmanager', region_name=region)  # changed to varable name
 secretstring = get_secret_dict(secretsmanagerclient, secret_manager)
-url=secretstring['APIGatewayURL']
+url=secretstring['APIGATEWAY_URL']
 
 CACHE_FILE = "profiling_cache.json"
 CACHE_TTL_HOURS = 24

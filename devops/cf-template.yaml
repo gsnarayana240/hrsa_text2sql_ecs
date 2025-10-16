@@ -144,6 +144,7 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess
         - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceRole
         - arn:aws:iam::aws:policy/AmazonECS_FullAccess
+        - arn:aws:iam::aws:policy/SecretsManagerReadWrite
 
   MyECSCluster:
         Type: AWS::ECS::Cluster
