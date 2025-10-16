@@ -83,6 +83,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/CloudWatchFullAccess
         - arn:aws:iam::aws:policy/service-role/AWSCodeDeployRole
+        - arn:aws:iam::aws:policy/SecretsManagerReadWrite
 
   hrsCodebuild:
     Type: AWS::CodeBuild::Project
