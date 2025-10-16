@@ -76,8 +76,8 @@ Resources:
                   - '*'
               - Effect: 'Allow'
                 Action:
-                  - 'codeconnections:UseConnection'
-                  - 'codeconnections:GetConnection'
+                  - 'codestar-connections:UseConnection'
+                  - 'codestar-connections:GetConnection'
                 Resource:
                   - '*'
       ManagedPolicyArns:
