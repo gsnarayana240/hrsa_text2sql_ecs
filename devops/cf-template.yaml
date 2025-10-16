@@ -95,7 +95,7 @@ Resources:
          BuildSpec: build.yaml
          Auth:
            Type: OAUTH
-           Resource: arn:aws:codeconnections:us-east-1:299195675384:connection/5bad3faa-8c56-4979-813f-b2fbbaf7f012
+           Resource: githubconnection
        Triggers:
            Webhook: true
            FilterGroups:
