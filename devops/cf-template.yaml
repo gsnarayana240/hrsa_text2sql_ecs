@@ -63,7 +63,7 @@ Resources:
         Port: 80
         DefaultActions:
           - Type: forward
-            TargetGroupArn: Ref: MyTargetGroup
+            TargetGroupArn: !Ref: MyTargetGroup
         LoadBalancerArn: !Ref LoadBalancerCreation
 
   hrsaCodeBuildRole:
