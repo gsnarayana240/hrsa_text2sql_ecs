@@ -149,6 +149,42 @@ Resources:
         - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
         - arn:aws:iam::aws:policy/EC2InstanceProfileForImageBuilderECRContainerBuilds
 
+  LoadBalancerTargetGroup:
+     Type: AWS::ElasticLoadBalancingV2::TargetGroup
+     Properties:
+        Name: text2sqltargetgrp
+        TargetType: ip
+        Protocol: HTTP
+        Port: 80
+        IpAddressType: ipv4
+        ProtocolVersion: HTTP1
+        HealthCheckProtocol: HTTP
+        HealthCheckPath: /
+        VpcId: vpc-0367298063a1a51e2
+
+  LoadBalancerCreation:
+     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+     Properties:
+        Name: text2sqlloadbalancer
+        Scheme: internet-facing
+        IpAddressType: ipv4
+        Subnets:
+            - !Ref pSubnet1
+            - !Ref pSubnet2
+        SecurityGroups:
+            - !Ref pSecurityGroupId
+        VpcId: vpc-0367298063a1a51e2
+
+  LoadBalancerListner:
+     Type: AWS::ElasticLoadBalancingV2::Listener
+     Properties:
+        Protocol: HTTP
+        Port: 80
+        DefaultActions:
+          - Type: forward
+            TargetGroupArn: !GetAtt LoadBalancerTargetGroup.Arn
+        LoadBalancerArn: !Ref LoadBalancerCreation
+
   MyECSCluster:
         Type: AWS::ECS::Cluster
         Properties:
@@ -170,6 +206,11 @@ Resources:
             - !Ref pSubnet2
           SecurityGroups:
             - !Ref pSecurityGroupId
+        LoadBalancers:
+          - ContainerName: my-app-container # Name of the container in your task definition
+            ContainerPort: 80           # Port the container is listening on
+            TargetGroupArn: !GetAtt LoadBalancerTargetGroup.Arn
+            LoadBalancerName: !Ref LoadBalancerCreation
             
   MyECSTaskDefinition:
     Type: AWS::ECS::TaskDefinition
