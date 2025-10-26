@@ -138,6 +138,7 @@ Resources:
             - !Ref pSubnet2
         SecurityGroups:
             - !Ref pSecurityGroupId
+        VpcId: vpc-0367298063a1a51e2
 
   LoadBalancerListner:
      Type: AWS::ElasticLoadBalancingV2::Listener
