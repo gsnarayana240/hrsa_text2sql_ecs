@@ -168,6 +168,7 @@ Resources:
         Name: text2sqlloadbalancer
         Scheme: internet-facing
         IpAddressType: ipv4
+        Type: application
         Subnets:
             - !Ref pSubnet1
             - !Ref pSubnet2
