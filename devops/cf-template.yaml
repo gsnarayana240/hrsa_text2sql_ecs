@@ -120,7 +120,7 @@ Resources:
      Properties:
         Name: text2sqltargetgrp
         TargetType: ip
-        Protocol: http
+        Protocol: HTTP
         Port: 80
         IpAddressType: ipv4
         ProtocolVersion: HTTP1
@@ -228,5 +228,5 @@ Resources:
             - ContainerPort: 8501
               Protocol: tcp
               HostPort: 8501
-              AppProtocol: http
+              AppProtocol: HTTP
               
