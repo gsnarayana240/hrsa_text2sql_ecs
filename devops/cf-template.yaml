@@ -146,7 +146,7 @@ Resources:
         Port: 80
         DefaultActions:
           - Type: forward
-            TargetGroupArn: !GetAtt MyTargetGroup.Arn
+            TargetGroupArn: !GetAtt LoadBalancerTargetGroup.Arn
         LoadBalancerArn: !Ref LoadBalancerCreation
           
   MyECRRepository:
