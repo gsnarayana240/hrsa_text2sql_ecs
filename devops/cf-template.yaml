@@ -146,11 +146,8 @@ Resources:
         Port: 80
         DefaultActions:
           - Type: forward
-            TargetGroupArn: !Ref: MyTargetGroup
+            TargetGroupArn: !GetAtt MyTargetGroup.Arn
         LoadBalancerArn: !Ref LoadBalancerCreation
-
-
-
           
   MyECRRepository:
     Type: AWS::ECR::Repository
