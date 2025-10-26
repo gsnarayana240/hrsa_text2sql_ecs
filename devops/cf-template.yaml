@@ -210,7 +210,7 @@ Resources:
         LoadBalancers:
           - ContainerName: my-app-container # Name of the container in your task definition
             ContainerPort: 80           # Port the container is listening on
-            TargetGroupArn: !GetAtt LoadBalancerTargetGroup.Arn
+            TargetGroupArn: !Ref LoadBalancerTargetGroup
             LoadBalancerName: !Ref LoadBalancerCreation
             
   MyECSTaskDefinition:
