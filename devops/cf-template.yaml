@@ -183,7 +183,7 @@ Resources:
         Port: 80
         DefaultActions:
           - Type: forward
-            TargetGroupArn: !GetAtt LoadBalancerTargetGroup.Arn
+            TargetGroupArn: !Ref LoadBalancerTargetGroup
         LoadBalancerArn: !Ref LoadBalancerCreation
 
   MyECSCluster:
