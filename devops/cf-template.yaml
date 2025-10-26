@@ -175,7 +175,6 @@ Resources:
         SecurityGroups:
             - !Ref pSecurityGroupId
 
-
   LoadBalancerListner:
      Type: AWS::ElasticLoadBalancingV2::Listener
      Properties:
@@ -183,8 +182,8 @@ Resources:
         Port: 80
         DefaultActions:
           - Type: forward
-            TargetGroupArn: !Ref LoadBalancerTargetGroup
-        LoadBalancerArn: !Ref LoadBalancerCreation
+            TargetGroupArn: !GetAtt LoadBalancerTargetGroup.Arn
+        LoadBalancerArn: !GetAtt LoadBalancerCreation.Arn
 
   MyECSCluster:
         Type: AWS::ECS::Cluster
@@ -210,7 +209,7 @@ Resources:
       LoadBalancers:
           - ContainerName: my-app-container # Name of the container in your task definition
             ContainerPort: 8501         # Port the container is listening on
-            TargetGroupArn: !Ref LoadBalancerTargetGroup
+            TargetGroupArn: !GetAtt LoadBalancerTargetGroup.Arn
             
   MyECSTaskDefinition:
     Type: AWS::ECS::TaskDefinition
