@@ -149,19 +149,6 @@ Resources:
         - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
         - arn:aws:iam::aws:policy/EC2InstanceProfileForImageBuilderECRContainerBuilds
 
-  LoadBalancerTargetGroup:
-     Type: AWS::ElasticLoadBalancingV2::TargetGroup
-     Properties:
-        Name: text2sqltargetgrp
-        TargetType: ip
-        Protocol: HTTP
-        Port: 80
-        IpAddressType: ipv4
-        ProtocolVersion: HTTP1
-        HealthCheckProtocol: HTTP
-        HealthCheckPath: /
-        VpcId: vpc-0367298063a1a51e2
-
   LoadBalancerCreation:
      Type: AWS::ElasticLoadBalancingV2::LoadBalancer
      Properties:
@@ -174,6 +161,19 @@ Resources:
             - !Ref pSubnet2
         SecurityGroups:
             - !Ref pSecurityGroupId
+
+  LoadBalancerTargetGroup:
+     Type: AWS::ElasticLoadBalancingV2::TargetGroup
+     Properties:
+        Name: text2sqltargetgrp
+        TargetType: ip
+        Protocol: HTTP
+        Port: 80
+        IpAddressType: ipv4
+        ProtocolVersion: HTTP1
+        HealthCheckProtocol: HTTP
+        HealthCheckPath: /
+        VpcId: vpc-0367298063a1a51e2
 
   LoadBalancerListner:
      Type: AWS::ElasticLoadBalancingV2::Listener
