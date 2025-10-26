@@ -165,12 +165,13 @@ Resources:
   LoadBalancerListner:
      Type: AWS::ElasticLoadBalancingV2::Listener
      Properties:
+        LoadBalancerArn: !Ref LoadBalancerCreation
         Protocol: HTTP
         Port: 80
         DefaultActions:
           - Type: forward
             TargetGroupArn: !Ref LoadBalancerTargetGroup
-        LoadBalancerArn: !Ref LoadBalancerCreation
+        
 
   LoadBalancerTargetGroup:
      Type: AWS::ElasticLoadBalancingV2::TargetGroup
@@ -178,11 +179,8 @@ Resources:
         Name: text2sqltargetgrp
         TargetType: ip
         Protocol: HTTP
-        Port: 80
+        Port: 8080
         IpAddressType: ipv4
-        ProtocolVersion: HTTP1
-        HealthCheckProtocol: HTTP
-        HealthCheckPath: /
         VpcId: vpc-0367298063a1a51e2
 
   MyECSCluster:
