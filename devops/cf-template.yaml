@@ -142,7 +142,7 @@ Resources:
   LoadBalancerListner:
      Type: AWS::ElasticLoadBalancingV2::Listener
      Properties:
-        Protocol: http
+        Protocol: HTTP
         Port: 80
         DefaultActions:
           - Type: forward
