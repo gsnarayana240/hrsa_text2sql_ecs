@@ -126,6 +126,7 @@ Resources:
         ProtocolVersion: HTTP1
         HealthCheckProtocol: HTTP
         HealthCheckPath: /
+        VpcId: vpc-0367298063a1a51e2
 
   LoadBalancerCreation:
      Type: AWS::ElasticLoadBalancingV2::LoadBalancer
