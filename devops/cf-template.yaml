@@ -32,40 +32,6 @@ Parameters:
     Type: String
     
 Resources:
-  LoadBalancerTargetGroup:
-     Type: AWS::ElasticLoadBalancingV2::TargetGroup
-     Properties:
-        Name: text2sqltargetgrp
-        TargetType: ip
-        Protocol: http
-        Port: 80
-        IpAddressType: ipv4
-        ProtocolVersion: HTTP1
-        HealthCheckProtocol: HTTP
-        HealthCheckPath: /
-
-  LoadBalancerCreation:
-     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
-     Properties:
-        Name: text2sqlloadbalancer
-        Scheme: internet-facing
-        IpAddressType: ipv4
-        Subnets:
-            - !Ref pSubnet1
-            - !Ref pSubnet2
-        SecurityGroups:
-            - !Ref pSecurityGroupId
-
-  LoadBalancerListner:
-     Type: AWS::ElasticLoadBalancingV2::Listener
-     Properties:
-        Protocol: http
-        Port: 80
-        DefaultActions:
-          - Type: forward
-            TargetGroupArn: !Ref: MyTargetGroup
-        LoadBalancerArn: !Ref LoadBalancerCreation
-
   hrsaCodeBuildRole:
     Type: AWS::IAM::Role
     Properties:
@@ -149,6 +115,42 @@ Resources:
             - Name: secret_manager
               Value: !Sub ${secretmanager}
           Image: !Sub ${ImageId}
+  LoadBalancerTargetGroup:
+     Type: AWS::ElasticLoadBalancingV2::TargetGroup
+     Properties:
+        Name: text2sqltargetgrp
+        TargetType: ip
+        Protocol: http
+        Port: 80
+        IpAddressType: ipv4
+        ProtocolVersion: HTTP1
+        HealthCheckProtocol: HTTP
+        HealthCheckPath: /
+
+  LoadBalancerCreation:
+     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+     Properties:
+        Name: text2sqlloadbalancer
+        Scheme: internet-facing
+        IpAddressType: ipv4
+        Subnets:
+            - !Ref pSubnet1
+            - !Ref pSubnet2
+        SecurityGroups:
+            - !Ref pSecurityGroupId
+
+  LoadBalancerListner:
+     Type: AWS::ElasticLoadBalancingV2::Listener
+     Properties:
+        Protocol: http
+        Port: 80
+        DefaultActions:
+          - Type: forward
+            TargetGroupArn: !Ref: MyTargetGroup
+        LoadBalancerArn: !Ref LoadBalancerCreation
+
+
+
           
   MyECRRepository:
     Type: AWS::ECR::Repository
