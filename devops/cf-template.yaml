@@ -207,11 +207,11 @@ Resources:
             - !Ref pSubnet2
           SecurityGroups:
             - !Ref pSecurityGroupId
-        LoadBalancers:
+      LoadBalancers:
           - ContainerName: my-app-container # Name of the container in your task definition
             ContainerPort: 80           # Port the container is listening on
             TargetGroupArn: !Ref LoadBalancerTargetGroup
-
+            LoadBalancerName: !Ref LoadBalancerCreation
             
   MyECSTaskDefinition:
     Type: AWS::ECS::TaskDefinition
