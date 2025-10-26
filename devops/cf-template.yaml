@@ -170,7 +170,7 @@ Resources:
         DefaultActions:
           - Type: forward
             TargetGroupArn: !GetAtt LoadBalancerTargetGroup.Arn
-        LoadBalancerArn: !GetAtt LoadBalancerCreation.Arn
+        LoadBalancerArn: !Ref LoadBalancerCreation
 
   LoadBalancerTargetGroup:
      Type: AWS::ElasticLoadBalancingV2::TargetGroup
