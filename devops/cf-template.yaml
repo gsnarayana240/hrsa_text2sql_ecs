@@ -209,7 +209,7 @@ Resources:
       LoadBalancers:
           - ContainerName: my-app-container # Name of the container in your task definition
             ContainerPort: 8501         # Port the container is listening on
-            TargetGroupArn: !GetAtt LoadBalancerTargetGroup.Arn
+            TargetGroupArn: !Ref LoadBalancerTargetGroup
             
   MyECSTaskDefinition:
     Type: AWS::ECS::TaskDefinition
