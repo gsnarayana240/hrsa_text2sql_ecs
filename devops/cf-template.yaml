@@ -162,6 +162,16 @@ Resources:
         SecurityGroups:
             - !Ref pSecurityGroupId
 
+  LoadBalancerListner:
+     Type: AWS::ElasticLoadBalancingV2::Listener
+     Properties:
+        Protocol: HTTP
+        Port: 80
+        DefaultActions:
+          - Type: forward
+            TargetGroupArn: !GetAtt LoadBalancerTargetGroup.Arn
+        LoadBalancerArn: !GetAtt LoadBalancerCreation.Arn
+
   LoadBalancerTargetGroup:
      Type: AWS::ElasticLoadBalancingV2::TargetGroup
      Properties:
@@ -174,16 +184,6 @@ Resources:
         HealthCheckProtocol: HTTP
         HealthCheckPath: /
         VpcId: vpc-0367298063a1a51e2
-
-  LoadBalancerListner:
-     Type: AWS::ElasticLoadBalancingV2::Listener
-     Properties:
-        Protocol: HTTP
-        Port: 80
-        DefaultActions:
-          - Type: forward
-            TargetGroupArn: !GetAtt LoadBalancerTargetGroup.Arn
-        LoadBalancerArn: !GetAtt LoadBalancerCreation.Arn
 
   MyECSCluster:
         Type: AWS::ECS::Cluster
